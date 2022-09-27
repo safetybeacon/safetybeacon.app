@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+	font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+		Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+	color: #4949ca;
+}
+
+/* To be applied to page contents, on top of the background so the background reaches the edges of the screen */
+.page-width {
+	@apply max-w-[900px] mx-auto px-5
+}
