@@ -7,7 +7,7 @@ const footer = () => {
 					<a className='block md:mr-4' href="https://choosealicense.com/licenses/gpl-3.0/">GNU General Public License v3.0</a>
 				</div>
 				<div className="my-3 md:my-0 md:flex">
-					<div>&copy; TOBY SCOTT 2022</div>
+					<div>&copy; TOBY SCOTT 2023</div>
 				</div>
 			</div>
 		</div>

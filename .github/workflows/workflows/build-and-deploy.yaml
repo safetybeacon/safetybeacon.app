@@ -1,0 +1,80 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-short-sha:
+    name: Get short SHA
+    runs-on: ubuntu-22.04
+
+    outputs:
+      short-sha: ${{ steps.short-sha.outputs.short-sha }}
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+
+      - name: Get short SHA
+        id: short-sha
+        run: |
+          echo "short-sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build the static site
+    needs: get-short-sha
+    runs-on: ubuntu-22.04
+
+    env:
+      BUILD_VERSION: ${{ github.ref_name }}-${{ needs.get-short-sha.outputs.short-sha }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.12.0
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Add build specifier to site artifacts
+        run: echo "${{ env.BUILD_VERSION }}" >> out/build.txt
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: out
+
+  deploy:
+    name: Deploy to S3
+    needs: build
+    runs-on: ubuntu-22.04
+
+    env:
+      AWS_REGION: us-east-1
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v2
+        with:
+          name: build-artifacts
+          path: out
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Copy files to S3
+        run: aws s3 sync . s3://${{ secrets.BUCKET_NAME }}/ --delete
+        working-directory: out
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
